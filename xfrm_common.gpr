@@ -1,0 +1,16 @@
+project Xfrm_Common is
+
+   for Source_Dirs use ();
+
+   Compiler_Switches := ("-gnatygAdISuxo",
+                         "-gnata",
+                         "-gnatVa",
+                         "-gnat05",
+                         "-gnatf",
+                         "-fstack-check",
+                         "-gnato",
+                         "-g");
+
+   Binder_Switches := ("-E");
+
+end Xfrm_Common;

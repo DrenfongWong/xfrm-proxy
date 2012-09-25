@@ -1,0 +1,20 @@
+with "anet";
+with "xfrmada";
+
+with "xfrm_common";
+
+project Xfrm_Proxy is
+
+   for Main use ("xfrm_proxy");
+   for Source_Dirs use ("src");
+   for Object_Dir use "obj";
+
+   package Compiler is
+      for Default_Switches ("ada") use Xfrm_Common.Compiler_Switches;
+   end Compiler;
+
+   package Binder is
+      for Default_Switches ("ada") use Xfrm_Common.Binder_Switches;
+   end Binder;
+
+end Xfrm_Proxy;
