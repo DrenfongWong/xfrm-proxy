@@ -1,5 +1,6 @@
 with "anet";
 with "xfrmada";
+with "tkmrpc_client";
 
 with "xfrm_common";
 
