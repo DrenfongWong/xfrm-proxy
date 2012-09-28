@@ -4,7 +4,7 @@ with Ada.Exceptions;
 with Interfaces.C.Strings;
 
 with Anet.Sockets.Netlink;
-with Anet.Sockets.Dgram_Receiver;
+with Anet.Receivers.Datagram;
 
 with Tkmrpc.Results;
 with Tkmrpc.Clients.Ees;
@@ -16,7 +16,7 @@ is
 
    use type Tkmrpc.Results.Result_Type;
 
-   package Netlink_Receiver is new Anet.Sockets.Dgram_Receiver
+   package Netlink_Receiver is new Anet.Receivers.Datagram
      (Socket_Type  => Anet.Sockets.Netlink.Raw_Socket_Type,
       Address_Type => Anet.Sockets.Netlink.Netlink_Addr_Type,
       Receive      => Anet.Sockets.Netlink.Receive);
