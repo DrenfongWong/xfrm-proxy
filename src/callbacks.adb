@@ -1,4 +1,3 @@
-with Ada.Text_IO;
 with Ada.Exceptions;
 
 with System;
@@ -12,8 +11,12 @@ with Tkmrpc.Clients.Ees;
 
 with Xfrm;
 
+with Logger;
+
 package body Callbacks
 is
+
+   package L renames Logger;
 
    procedure Process_Acquire (Message : access Xfrm.Nlmsghdr_Type);
    --  Process Kernel ACQUIRE message.
@@ -33,18 +36,17 @@ is
 
       Action : Xfrm.Xfrm_Msg_Type;
    begin
-      Ada.Text_IO.Put_Line ("Netlink message received ("
-                            & Item'Length'Img & " bytes ) from pid" & Src'Img);
       if not Xfrm.Nlmsg_Ok (Msg => Msg,
                             Len => Item'Length)
       then
-         Ada.Text_IO.Put_Line ("!INVALID!");
+         L.Log (Message => "Ignoring invalid Netlink message from pid"
+                & Src'Img);
          return;
       end if;
 
       Action := Xfrm.Xfrm_Msg_Type'Enum_Val (Msg.Nlmsg_Type);
-      Ada.Text_IO.Put_Line ("Type  : " & Action'Img);
-      Ada.Text_IO.Put_Line ("Len   :" & Msg.Nlmsg_Len'Img);
+      L.Log (Message => "Netlink message received (" & Item'Length'Img
+             & " bytes ) from pid" & Src'Img & ", type " & Action'Img);
 
       case Action is
          when Xfrm.XFRM_MSG_ACQUIRE => Process_Acquire (Message => Msg'Access);
@@ -91,21 +93,23 @@ is
                      for Tmpl'Address use Tmpl_Addr;
                      pragma Import (Ada, Tmpl);
                   begin
-                     Ada.Text_IO.Put_Line ("Reqid :" & Tmpl.reqid'Img);
+                     L.Log (Message => "Initiating ESA acquire for reqid"
+                            & Tmpl.reqid'Img);
                      Tkmrpc.Clients.Ees.Esa_Acquire
                        (Result => Status,
                         Sp_Id  => Tkmrpc.Types.Sp_Id_Type (Tmpl.reqid));
                      if Status /= Tkmrpc.Results.Ok then
-                        Ada.Text_IO.Put_Line ("Esa_Acquire failed");
+                        L.Log (Level   => L.Error,
+                               Message => "ESA acquire failed");
                      end if;
 
                   exception
                      when E : others =>
-                        Ada.Text_IO.Put_Line
-                          (Ada.Exceptions.Exception_Information (E));
+                        L.Log (Level   => L.Error,
+                               Message => Ada.Exceptions.Exception_Information
+                                 (E));
                   end;
-               when others =>
-                  Ada.Text_IO.Put_Line ("Skipping RTA " & Attr_Kind'Img);
+               when others => null;
             end case;
 
             Xfrm.Rta_Next (Rta     => Rta'Access,
@@ -129,11 +133,11 @@ is
       for Expire'Address use Addr;
       pragma Import (Ada, Expire);
    begin
+      L.Log (Message => "Initiating ESA expire (reqid" & Expire.state.reqid'Img
+             & ", proto" & Expire.state.id.proto'Img
+             & ", SPI" & Expire.state.id.spi'Img
+             & ", hard " & Boolean'Image (Expire.hard /= 0) & ")");
 
-      Ada.Text_IO.Put_Line ("Proto :" & Expire.state.id.proto'Img);
-      Ada.Text_IO.Put_Line ("SPI   :" & Expire.state.id.spi'Img);
-      Ada.Text_IO.Put_Line ("Reqid :" & Expire.state.reqid'Img);
-      Ada.Text_IO.Put_Line ("Hard  : " & Boolean'Image (Expire.hard /= 0));
       Tkmrpc.Clients.Ees.Esa_Expire
         (Result   => Status,
          Sp_Id    => Tkmrpc.Types.Sp_Id_Type (Expire.state.reqid),
@@ -141,13 +145,14 @@ is
          Protocol => Tkmrpc.Types.Protocol_Type (Expire.state.id.proto),
          Hard     => Tkmrpc.Types.Expiry_Flag_Type (Expire.hard));
       if Status /= Tkmrpc.Results.Ok then
-         Ada.Text_IO.Put_Line ("Esa_Expire failed");
+         L.Log (Level   => L.Error,
+                Message => "ESA expire failed");
       end if;
 
    exception
       when E : others =>
-         Ada.Text_IO.Put_Line
-           (Ada.Exceptions.Exception_Information (E));
+         L.Log (Level   => L.Error,
+                Message => Ada.Exceptions.Exception_Information (E));
    end Process_Expire;
 
 end Callbacks;

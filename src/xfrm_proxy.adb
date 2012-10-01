@@ -10,11 +10,15 @@ with Tkmrpc.Results;
 with Tkmrpc.Clients.Ees;
 
 with Callbacks;
+with Version;
+with Logger;
 
 procedure Xfrm_Proxy
 is
 
    use type Tkmrpc.Results.Result_Type;
+
+   package L renames Logger;
 
    package Netlink_Receiver is new Anet.Receivers.Datagram
      (Socket_Type  => Anet.Sockets.Netlink.Raw_Socket_Type,
@@ -32,6 +36,9 @@ is
 
    RPC_Error : exception;
 begin
+   L.Use_File;
+   L.Log (Message => "XFRM Proxy starting (" & Version.Version_String & ")");
+
    Sock.Init (Protocol => Anet.Sockets.Netlink.Proto_Netlink_Xfrm);
    Sock.Bind (Address => Integer (C_Getpid),
               Groups  => (1 => Anet.Sockets.Netlink.Group_Xfrm_Acquire,
@@ -45,10 +52,14 @@ begin
    if EES_Status /= Tkmrpc.Results.Ok then
       raise RPC_Error with "Could not bind to UNIX path " & EES_Socket;
    end if;
+   L.Log (Message => "Initialization complete, waiting for kernel events");
 
 exception
    when E : others =>
-      Ada.Text_IO.Put_Line ("Exception caught:");
-      Ada.Text_IO.Put_Line (Ada.Exceptions.Exception_Information (X => E));
+      L.Log (Level   => L.Error,
+             Message => "Terminating due to error");
+      L.Log (Level   => L.Error,
+             Message => Ada.Exceptions.Exception_Information (X => E));
       Rcvr.Stop;
+      L.Stop;
 end Xfrm_Proxy;
