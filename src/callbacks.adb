@@ -155,4 +155,18 @@ is
                 Message => Ada.Exceptions.Exception_Information (E));
    end Process_Expire;
 
+   -------------------------------------------------------------------------
+
+   procedure Receiver_Error
+     (E         :        Ada.Exceptions.Exception_Occurrence;
+      Stop_Flag : in out Boolean)
+   is
+   begin
+      L.Log (Level   => L.Error,
+             Message => "Exception in Netlink receiver");
+      L.Log (Level   => L.Error,
+             Message => Ada.Exceptions.Exception_Information (X => E));
+      Stop_Flag := False;
+   end Receiver_Error;
+
 end Callbacks;

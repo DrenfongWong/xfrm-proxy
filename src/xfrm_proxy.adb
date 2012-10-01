@@ -44,6 +44,7 @@ begin
               Groups  => (1 => Anet.Sockets.Netlink.Group_Xfrm_Acquire,
                           2 => Anet.Sockets.Netlink.Group_Xfrm_Expire));
 
+   Rcvr.Register_Error_Handler (Callback => Callbacks.Receiver_Error'Access);
    Rcvr.Listen (Callback => Callbacks.Handle_Message'Access);
 
    Tkmrpc.Clients.Ees.Init (Result  => EES_Status,
