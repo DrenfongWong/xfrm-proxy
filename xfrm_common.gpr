@@ -2,7 +2,8 @@ project Xfrm_Common is
 
    for Source_Dirs use ();
 
-   Compiler_Switches := ("-gnatygAdISuxo",
+   Compiler_Switches := ("-gnatwale",
+                         "-gnatygAdISuxo",
                          "-gnata",
                          "-gnatVa",
                          "-gnat05",

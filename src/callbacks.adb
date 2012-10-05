@@ -1,5 +1,3 @@
-with Ada.Exceptions;
-
 with System;
 
 with asm_generic_int_ll64_h;
