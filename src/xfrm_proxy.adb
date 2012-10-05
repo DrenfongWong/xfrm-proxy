@@ -47,9 +47,15 @@ begin
    Rcvr.Register_Error_Handler (Callback => Callbacks.Receiver_Error'Access);
    Rcvr.Listen (Callback => Callbacks.Handle_Message'Access);
 
-   Tkmrpc.Clients.Ees.Init (Result  => EES_Status,
-                            Address => Interfaces.C.Strings.New_String
-                              (EES_Socket));
+   declare
+      Path : Interfaces.C.Strings.chars_ptr
+        := Interfaces.C.Strings.New_String (Str => EES_Socket);
+   begin
+      Tkmrpc.Clients.Ees.Init (Result  => EES_Status,
+                               Address => Path);
+      Interfaces.C.Strings.Free (Item => Path);
+   end;
+
    if EES_Status /= Tkmrpc.Results.Ok then
       raise RPC_Error with "Could not bind to UNIX path " & EES_Socket;
    end if;
