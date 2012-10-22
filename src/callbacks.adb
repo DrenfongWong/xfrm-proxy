@@ -7,7 +7,7 @@ with Tkmrpc.Types;
 with Tkmrpc.Results;
 with Tkmrpc.Clients.Ees;
 
-with Xfrm;
+with Xfrm.Thin;
 
 with Logger;
 
@@ -16,10 +16,10 @@ is
 
    package L renames Logger;
 
-   procedure Process_Acquire (Message : access Xfrm.Nlmsghdr_Type);
+   procedure Process_Acquire (Message : access Xfrm.Thin.Nlmsghdr_Type);
    --  Process Kernel ACQUIRE message.
 
-   procedure Process_Expire (Message : access Xfrm.Nlmsghdr_Type);
+   procedure Process_Expire (Message : access Xfrm.Thin.Nlmsghdr_Type);
    --  Process Kernel EXPIRE message.
 
    -------------------------------------------------------------------------
@@ -28,52 +28,54 @@ is
      (Item : Ada.Streams.Stream_Element_Array;
       Src  : Anet.Sockets.Netlink.Netlink_Addr_Type)
    is
-      Msg : aliased Xfrm.Nlmsghdr_Type;
+      Msg : aliased Xfrm.Thin.Nlmsghdr_Type;
 
       for Msg'Address use Item'Address;
 
-      Action : Xfrm.Xfrm_Msg_Type;
+      Action : Xfrm.Thin.Xfrm_Msg_Type;
    begin
-      if not Xfrm.Nlmsg_Ok (Msg => Msg,
-                            Len => Item'Length)
+      if not Xfrm.Thin.Nlmsg_Ok (Msg => Msg,
+                                 Len => Item'Length)
       then
          L.Log (Message => "Ignoring invalid Netlink message from pid"
                 & Src'Img);
          return;
       end if;
 
-      Action := Xfrm.Xfrm_Msg_Type'Enum_Val (Msg.Nlmsg_Type);
+      Action := Xfrm.Thin.Xfrm_Msg_Type'Enum_Val (Msg.Nlmsg_Type);
       L.Log (Message => "Netlink message received (" & Item'Length'Img
              & " bytes ) from pid" & Src'Img & ", type " & Action'Img);
 
       case Action is
-         when Xfrm.XFRM_MSG_ACQUIRE => Process_Acquire (Message => Msg'Access);
-         when Xfrm.XFRM_MSG_EXPIRE  => Process_Expire (Message => Msg'Access);
-         when others                => null;
+         when Xfrm.Thin.XFRM_MSG_ACQUIRE =>
+            Process_Acquire (Message => Msg'Access);
+         when Xfrm.Thin.XFRM_MSG_EXPIRE =>
+            Process_Expire (Message => Msg'Access);
+         when others => null;
       end case;
    end Handle_Message;
 
    -------------------------------------------------------------------------
 
-   procedure Process_Acquire (Message : access Xfrm.Nlmsghdr_Type)
+   procedure Process_Acquire (Message : access Xfrm.Thin.Nlmsghdr_Type)
    is
       Addr     : System.Address
-        := Xfrm.Nlmsg_Data
+        := Xfrm.Thin.Nlmsg_Data
           (Msg => Message,
            Len => xfrm_h.xfrm_user_acquire'Size / 8);
       Rta_Size : Natural
-        := Xfrm.Nlmsg_Payload
+        := Xfrm.Thin.Nlmsg_Payload
           (Msg => Message.all,
            Len => xfrm_h.xfrm_user_acquire'Size / 8);
    begin
       loop
          declare
             Attr_Kind : xfrm_h.xfrm_attr_type_t;
-            Rta       : aliased Xfrm.Rtattr_Type;
+            Rta       : aliased Xfrm.Thin.Rtattr_Type;
             for Rta'Address use Addr;
             pragma Import (Ada, Rta);
          begin
-            exit when not Xfrm.Rta_Ok
+            exit when not Xfrm.Thin.Rta_Ok
               (Rta => Rta,
                Len => Rta_Size);
 
@@ -86,7 +88,7 @@ is
 
                      Status    : Tkmrpc.Results.Result_Type;
                      Tmpl_Addr : constant System.Address
-                       := Xfrm.Rta_Data (Rta => Rta'Access);
+                       := Xfrm.Thin.Rta_Data (Rta => Rta'Access);
                      Tmpl      : xfrm_h.xfrm_user_tmpl;
                      for Tmpl'Address use Tmpl_Addr;
                      pragma Import (Ada, Tmpl);
@@ -110,23 +112,23 @@ is
                when others => null;
             end case;
 
-            Xfrm.Rta_Next (Rta     => Rta'Access,
-                           Attrlen => Rta_Size,
-                           Address => Addr);
+            Xfrm.Thin.Rta_Next (Rta     => Rta'Access,
+                                Attrlen => Rta_Size,
+                                Address => Addr);
          end;
       end loop;
    end Process_Acquire;
 
    -------------------------------------------------------------------------
 
-   procedure Process_Expire (Message : access Xfrm.Nlmsghdr_Type)
+   procedure Process_Expire (Message : access Xfrm.Thin.Nlmsghdr_Type)
    is
       use type asm_generic_int_ll64_h.uu_u8;
       use type Tkmrpc.Results.Result_Type;
 
       Status : Tkmrpc.Results.Result_Type;
       Addr   : constant System.Address
-        := Xfrm.Nlmsg_Data (Msg => Message);
+        := Xfrm.Thin.Nlmsg_Data (Msg => Message);
       Expire : xfrm_h.xfrm_user_expire;
       for Expire'Address use Addr;
       pragma Import (Ada, Expire);
